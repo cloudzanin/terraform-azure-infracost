@@ -58,7 +58,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_service_plan" "appplan" {
-  name                = module.naming.service_plan.name_unique
+  name                = "appserviceplan-example"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   os_type             = "Linux"
