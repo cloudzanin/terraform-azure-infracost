@@ -65,7 +65,7 @@ jobs:
         run: infracost breakdown --path . --format json --out-file infracost.json
 
       - name: Infracost PR comment
-        uses: infracost/actions/comment@v2
+        uses: infracost/actions/comment@v3
         with:
           path: infracost.json
           behavior: update
