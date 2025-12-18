@@ -1,0 +1,1 @@
+{"Path":"c:\\GitHub\\terraform-azure-infracost","Version":"2.0","Modules":[{"Key":"naming","Source":"registry.terraform.io/Azure/naming/azurerm","Version":"0.4.2","Dir":".infracost\\terraform_modules\\edd943637ffaa8c3e878065bffaaeca5","DownloadURL":"git::https://github.com/Azure/terraform-azurerm-naming?ref=75d5afae4cb01f4446025e81f76af6b60c1f927b"}]}
