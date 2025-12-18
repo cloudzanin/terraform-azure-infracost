@@ -56,3 +56,11 @@ resource "azurerm_resource_group" "rg" {
   location = local.azure_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
+
+resource "azurerm_service_plan" "appplan" {
+  name                = "example"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  os_type             = "Linux"
+  sku_name            = "B1"
+}
