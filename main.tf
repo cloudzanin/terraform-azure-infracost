@@ -90,6 +90,36 @@ resource "azurerm_network_security_group" "main" {
   // All ingress rules moved to dedicated azurerm_network_security_rule resources
 }
 
+resource "azurerm_network_security_rule" "allow_ssh" {
+  count                       = length(var.allowed_ssh_cidrs) > 0 ? 1 : 0
+  name                        = "allow-ssh"
+  priority                    = 1001
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefixes     = var.allowed_ssh_cidrs
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.main.name
+}
+
+resource "azurerm_network_security_rule" "allow_web" {
+  count                       = length(var.allowed_web_cidrs) > 0 ? 1 : 0
+  name                        = "allow-web"
+  priority                    = 1002
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["80", "443"]
+  source_address_prefixes     = var.allowed_web_cidrs
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.main.name
+}
+
 resource "azurerm_subnet_network_security_group_association" "main" {
   subnet_id                 = azurerm_subnet.main.id
   network_security_group_id = azurerm_network_security_group.main.id
