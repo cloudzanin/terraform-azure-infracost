@@ -11,6 +11,10 @@ on:
 
 env:
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+  # Provide GitHub token globally to avoid API rate limits
+  GITHUB_TOKEN: ${{ github.token }}
+  # Keep Infracost currency consistent with other workflow
+  INFRACOST_CURRENCY: GBP
 
 jobs:
   validate:
@@ -68,6 +72,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          github-token: ${{ github.token }}
 
       - name: Checkout base branch
         uses: actions/checkout@v4
@@ -107,6 +112,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          github-token: ${{ github.token }}
 
       - name: Checkout main/master branch
         uses: actions/checkout@v4

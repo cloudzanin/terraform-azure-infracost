@@ -13,6 +13,10 @@ env:
   # If you use private modules you'll need this env variable to use
   # the same ssh-agent socket value across all jobs & steps.
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+  # Set Infracost currency to UK Pounds for all jobs/steps
+  INFRACOST_CURRENCY: GBP
+  # Provide GitHub token to avoid unauthenticated API rate-limits
+  GITHUB_TOKEN: ${{ github.token }}
 jobs:
   # This stage runs the Infracost CLI and posts PR comments.
   # It also updates PR comments when the PR is updated (synchronize event).
@@ -46,6 +50,7 @@ jobs:
         # If you can't use this action, use Docker image infracost/infracost:ci-0.10
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          github-token: ${{ github.token }}
 
       # Checkout the base branch of the pull request (e.g. main/master).
       - name: Checkout base branch
@@ -99,6 +104,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+          github-token: ${{ github.token }}
 
       - name: Checkout main/master branch
         uses: actions/checkout@v4
