@@ -17,6 +17,10 @@ terraform {
       source  = "Azure/azapi"
       version = ">= 2.2.0, < 3.0.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0.0, < 5.0.0"
+    }
   }
 }
 
@@ -33,13 +37,6 @@ provider "azurerm" {
 
 }
 
-
-##
-# Data Sources
-##
-
-data "azurerm_client_config" "current" {
-}
 
 ##
 # Local Variables
