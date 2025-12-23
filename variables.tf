@@ -94,3 +94,15 @@ variable "tags" {
     managed_by  = "terraform"
   }
 }
+
+variable "allowed_ssh_cidrs" {
+  description = "CIDR blocks permitted to access SSH (port 22). Leave empty to disable public SSH."
+  type        = list(string)
+  default     = []
+}
+
+variable "allowed_web_cidrs" {
+  description = "CIDR blocks permitted to access HTTP/HTTPS (80/443). Use LB/App Gateway IPs or corporate ranges."
+  type        = list(string)
+  default     = []
+}

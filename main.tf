@@ -60,9 +60,9 @@ locals {
 ##
 
 resource "azurerm_resource_group" "main" {
-  name       = var.resource_group_name
-  location   = var.location
-  tags       = local.common_tags
+  name     = var.resource_group_name
+  location = var.location
+  tags     = local.common_tags
 }
 
 ##
@@ -90,41 +90,7 @@ resource "azurerm_network_security_group" "main" {
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
 
-  security_rule {
-    name                       = "AllowSSH"
-    priority                   = 1000
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "AllowHTTP"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "AllowHTTPS"
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
+  // All ingress rules moved to dedicated azurerm_network_security_rule resources
 }
 
 resource "azurerm_subnet_network_security_group_association" "main" {
@@ -143,11 +109,11 @@ resource "azurerm_public_ip" "main" {
 }
 
 resource "azurerm_network_interface" "main" {
-  name                          = "${local.resource_prefix}-nic"
-  location                      = azurerm_resource_group.main.location
-  resource_group_name           = azurerm_resource_group.main.name
+  name                           = "${local.resource_prefix}-nic"
+  location                       = azurerm_resource_group.main.location
+  resource_group_name            = azurerm_resource_group.main.name
   accelerated_networking_enabled = var.enable_accelerated_networking
-  tags                          = local.common_tags
+  tags                           = local.common_tags
 
   ip_configuration {
     name                          = "testconfiguration1"
