@@ -1,66 +1,261 @@
+##
+# Terraform Configuration
+##
+
 terraform {
-  required_version = ">= 1.9.0"
+  required_version = ">= 1.10.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 4.0.0, < 5.0.0"
+      version = ">= 3.71, < 5.0.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = ">= 3.5.0, < 4.0.0"
+      version = ">= 3.5.1, < 4.0.0"
     }
-    tls = {
-      source  = "hashicorp/tls"
-      version = ">= 4.0.0, < 5.0.0"
-    }
-    local = {
-      source  = "hashicorp/local"
-      version = ">= 2.4.0, < 3.0.0"
-    }
-    null = {
-      source  = "hashicorp/null"
-      version = ">= 3.2.0, < 4.0.0"
+    azapi = {
+      source  = "Azure/azapi"
+      version = ">= 2.2.0, < 3.0.0"
     }
   }
 }
 
+provider "azapi" {
+  # Configuration options
+}
+
 provider "azurerm" {
   features {}
-  subscription_id = var.azure_subscription_id
+  subscription_id = var.subscription_id
+
+  # IMPORTANT: use Entra ID for storage data-plane calls when keys are disabled
+  storage_use_azuread = true
+
 }
 
-# This ensures we have unique CAF compliant names for our resources.
-module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.4.2"
+
+##
+# Data Sources
+##
+
+data "azurerm_client_config" "current" {
 }
+
+##
+# Local Variables
+##
 
 locals {
-  azure_regions = [
-    "ukwest",
-    "westeurope",
-    "francecentral",
-    "swedencentral"
-    # Add other regions as needed
+  resource_prefix = "${var.environment}-vm"
+  common_tags = merge(
+    var.tags,
+    {
+      deployed_at = timestamp()
+    }
+  )
+}
+
+##
+# Resource Group
+##
+
+resource "azurerm_resource_group" "main" {
+  name       = var.resource_group_name
+  location   = var.location
+  tags       = local.common_tags
+}
+
+##
+# Virtual Network & Networking
+##
+
+resource "azurerm_virtual_network" "main" {
+  name                = "${local.resource_prefix}-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.common_tags
+}
+
+resource "azurerm_subnet" "main" {
+  name                 = "${local.resource_prefix}-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+resource "azurerm_network_security_group" "main" {
+  name                = "${local.resource_prefix}-nsg"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.common_tags
+
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 1000
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTP"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTPS"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "main" {
+  subnet_id                 = azurerm_subnet.main.id
+  network_security_group_id = azurerm_network_security_group.main.id
+}
+
+resource "azurerm_public_ip" "main" {
+  count               = var.enable_public_ip ? 1 : 0
+  name                = "${local.resource_prefix}-pip"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.common_tags
+}
+
+resource "azurerm_network_interface" "main" {
+  name                          = "${local.resource_prefix}-nic"
+  location                      = azurerm_resource_group.main.location
+  resource_group_name           = azurerm_resource_group.main.name
+  accelerated_networking_enabled = var.enable_accelerated_networking
+  tags                          = local.common_tags
+
+  ip_configuration {
+    name                          = "testconfiguration1"
+    subnet_id                     = azurerm_subnet.main.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = var.enable_public_ip ? azurerm_public_ip.main[0].id : null
+  }
+}
+
+##
+# Virtual Machine
+##
+
+resource "azurerm_linux_virtual_machine" "main" {
+  name                = var.vm_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  size                = var.vm_size
+  tags                = local.common_tags
+
+  admin_username                  = var.admin_username
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = tls_private_key.example.public_key_openssh
+  }
+
+  network_interface_ids = [
+    azurerm_network_interface.main.id,
   ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
+    disk_size_gb         = var.os_disk_size_gb
+  }
+
+  source_image_reference {
+    publisher = var.image_publisher
+    offer     = var.image_offer
+    sku       = var.image_sku
+    version   = var.image_version
+  }
 }
 
-# This picks a random region from the list of regions.
-resource "random_integer" "region_index" {
-  max = length(local.azure_regions) - 1
-  min = 0
+##
+# Data Disk (Optional)
+##
+
+resource "azurerm_managed_disk" "data" {
+  name                 = "${local.resource_prefix}-data-disk"
+  location             = azurerm_resource_group.main.location
+  resource_group_name  = azurerm_resource_group.main.name
+  storage_account_type = "Premium_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 128
+  tags                 = local.common_tags
 }
 
-# This is required for resource modules
-resource "azurerm_resource_group" "rg" {
-  location = local.azure_regions[random_integer.region_index.result]
-  name     = module.naming.resource_group.name_unique
+resource "azurerm_virtual_machine_data_disk_attachment" "main" {
+  managed_disk_id    = azurerm_managed_disk.data.id
+  virtual_machine_id = azurerm_linux_virtual_machine.main.id
+  lun                = 0
+  caching            = "ReadWrite"
 }
 
-resource "azurerm_service_plan" "appplan" {
-  name                = "appserviceplan-example"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  os_type             = "Linux"
-  sku_name            = "B1"
+resource "tls_private_key" "example" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+##
+# Outputs
+##
+
+output "resource_group_id" {
+  description = "ID of the created resource group"
+  value       = azurerm_resource_group.main.id
+}
+
+output "vm_id" {
+  description = "ID of the created virtual machine"
+  value       = azurerm_linux_virtual_machine.main.id
+}
+
+output "vm_name" {
+  description = "Name of the created virtual machine"
+  value       = azurerm_linux_virtual_machine.main.name
+}
+
+output "private_ip_address" {
+  description = "Private IP address of the VM"
+  value       = azurerm_network_interface.main.private_ip_address
+}
+
+output "public_ip_address" {
+  description = "Public IP address of the VM"
+  value       = var.enable_public_ip ? azurerm_public_ip.main[0].ip_address : "N/A"
+  sensitive   = false
+}
+
+output "virtual_network_id" {
+  description = "ID of the virtual network"
+  value       = azurerm_virtual_network.main.id
+}
+
+output "network_security_group_id" {
+  description = "ID of the network security group"
+  value       = azurerm_network_security_group.main.id
 }
