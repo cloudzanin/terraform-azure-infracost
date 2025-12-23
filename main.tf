@@ -30,7 +30,7 @@ provider "azapi" {
 
 provider "azurerm" {
   features {}
-  subscription_id = var.subscription_id
+  subscription_id = var.azure_subscription_id
 
   # IMPORTANT: use Entra ID for storage data-plane calls when keys are disabled
   storage_use_azuread = true
