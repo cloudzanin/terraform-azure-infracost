@@ -34,7 +34,7 @@ variable "vm_name" {
 variable "vm_size" {
   description = "Size of the virtual machine"
   type        = string
-  default     = "Standard_DS5_v2"
+  default     = "Standard_B1s"
 }
 
 variable "image_publisher" {
