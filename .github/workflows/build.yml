@@ -1,4 +1,4 @@
-name: CI
+name: Terraform Validate and Deploy
 
 on:
   pull_request:
