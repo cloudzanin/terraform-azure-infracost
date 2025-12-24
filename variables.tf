@@ -16,7 +16,7 @@ variable "resource_group_name" {
 variable "location" {
   description = "Azure region for resources"
   type        = string
-  default     = "East US"
+  default     = "Switzerland North"
 }
 
 variable "environment" {
@@ -34,7 +34,7 @@ variable "vm_name" {
 variable "vm_size" {
   description = "Size of the virtual machine"
   type        = string
-  default     = "Standard_DS5_v2"
+  default     = "Standard_B1s"
 }
 
 variable "image_publisher" {
