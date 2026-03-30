@@ -92,7 +92,13 @@ jobs:
         EOF
 
     - name: Terraform init
-      run: terraform init
+      run: |
+        terraform init \
+          -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RESOURCE_GROUP }}" \
+          -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" \
+          -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
+          -backend-config="key=${{ secrets.TF_BACKEND_KEY }}" \
+          -backend-config="use_azuread_auth=true"
 
     - name: Terraform plan
       run: terraform plan -no-color -out=tfplan
