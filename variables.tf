@@ -16,7 +16,7 @@ variable "resource_group_name" {
 variable "location" {
   description = "Azure region for resources"
   type        = string
-  default     = "Switzerland North"
+  default     = "Sweden Central"
 }
 
 variable "environment" {
@@ -40,19 +40,19 @@ variable "vm_size" {
 variable "image_publisher" {
   description = "Publisher of the VM image"
   type        = string
-  default     = "Canonical"
+  default     = "MicrosoftWindowsServer"
 }
 
 variable "image_offer" {
   description = "Offer of the VM image"
   type        = string
-  default     = "0001-com-ubuntu-server-focal"
+  default     = "WindowsServer"
 }
 
 variable "image_sku" {
   description = "SKU of the VM image"
   type        = string
-  default     = "20_04-lts-gen2"
+  default     = "2019-datacenter-gensecond"
 }
 
 variable "image_version" {
@@ -95,8 +95,8 @@ variable "tags" {
   }
 }
 
-variable "allowed_ssh_cidrs" {
-  description = "CIDR blocks permitted to access SSH (port 22). Leave empty to disable public SSH."
+variable "allowed_rdp_cidrs" {
+  description = "CIDR blocks permitted to access RDP (port 3389). Leave empty to disable public RDP."
   type        = list(string)
   default     = []
 }

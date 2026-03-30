@@ -17,10 +17,6 @@ terraform {
       source  = "Azure/azapi"
       version = ">= 2.2.0, < 3.0.0"
     }
-    tls = {
-      source  = "hashicorp/tls"
-      version = ">= 4.0.0, < 5.0.0"
-    }
   }
 }
 
@@ -90,16 +86,16 @@ resource "azurerm_network_security_group" "main" {
   // All ingress rules moved to dedicated azurerm_network_security_rule resources
 }
 
-resource "azurerm_network_security_rule" "allow_ssh" {
-  count                       = length(var.allowed_ssh_cidrs) > 0 ? 1 : 0
-  name                        = "allow-ssh"
+resource "azurerm_network_security_rule" "allow_rdp" {
+  count                       = length(var.allowed_rdp_cidrs) > 0 ? 1 : 0
+  name                        = "allow-rdp"
   priority                    = 1001
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
   source_port_range           = "*"
-  destination_port_range      = "22"
-  source_address_prefixes     = var.allowed_ssh_cidrs
+  destination_port_range      = "3389"
+  source_address_prefixes     = var.allowed_rdp_cidrs
   destination_address_prefix  = "*"
   resource_group_name         = azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.main.name
@@ -154,20 +150,15 @@ resource "azurerm_network_interface" "main" {
 # Virtual Machine
 ##
 
-resource "azurerm_linux_virtual_machine" "main" {
+resource "azurerm_windows_virtual_machine" "main" {
   name                = var.vm_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   size                = var.vm_size
   tags                = local.common_tags
 
-  admin_username                  = var.admin_username
-  disable_password_authentication = true
-
-  admin_ssh_key {
-    username   = var.admin_username
-    public_key = tls_private_key.example.public_key_openssh
-  }
+  admin_username = var.admin_username
+  admin_password = random_password.vm_admin_password.result
 
   network_interface_ids = [
     azurerm_network_interface.main.id,
@@ -175,7 +166,7 @@ resource "azurerm_linux_virtual_machine" "main" {
 
   os_disk {
     caching              = "ReadWrite"
-    storage_account_type = "Premium_LRS"
+    storage_account_type = "Standard_LRS"
     disk_size_gb         = var.os_disk_size_gb
   }
 
@@ -195,7 +186,7 @@ resource "azurerm_managed_disk" "data" {
   name                 = "${local.resource_prefix}-data-disk"
   location             = azurerm_resource_group.main.location
   resource_group_name  = azurerm_resource_group.main.name
-  storage_account_type = "Premium_LRS"
+  storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = 128
   tags                 = local.common_tags
@@ -203,14 +194,18 @@ resource "azurerm_managed_disk" "data" {
 
 resource "azurerm_virtual_machine_data_disk_attachment" "main" {
   managed_disk_id    = azurerm_managed_disk.data.id
-  virtual_machine_id = azurerm_linux_virtual_machine.main.id
+  virtual_machine_id = azurerm_windows_virtual_machine.main.id
   lun                = 0
   caching            = "ReadWrite"
 }
 
-resource "tls_private_key" "example" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
+resource "random_password" "vm_admin_password" {
+  length           = 24
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
+  override_special = "!@#%^*-_=+?"
 }
 
 ##
@@ -224,12 +219,12 @@ output "resource_group_id" {
 
 output "vm_id" {
   description = "ID of the created virtual machine"
-  value       = azurerm_linux_virtual_machine.main.id
+  value       = azurerm_windows_virtual_machine.main.id
 }
 
 output "vm_name" {
   description = "Name of the created virtual machine"
-  value       = azurerm_linux_virtual_machine.main.name
+  value       = azurerm_windows_virtual_machine.main.name
 }
 
 output "private_ip_address" {
