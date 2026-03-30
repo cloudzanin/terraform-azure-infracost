@@ -178,27 +178,6 @@ resource "azurerm_windows_virtual_machine" "main" {
   }
 }
 
-##
-# Data Disk (Optional)
-##
-
-resource "azurerm_managed_disk" "data" {
-  name                 = "${local.resource_prefix}-data-disk"
-  location             = azurerm_resource_group.main.location
-  resource_group_name  = azurerm_resource_group.main.name
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = 128
-  tags                 = local.common_tags
-}
-
-resource "azurerm_virtual_machine_data_disk_attachment" "main" {
-  managed_disk_id    = azurerm_managed_disk.data.id
-  virtual_machine_id = azurerm_windows_virtual_machine.main.id
-  lun                = 0
-  caching            = "ReadWrite"
-}
-
 resource "random_password" "vm_admin_password" {
   length           = 24
   min_lower        = 1

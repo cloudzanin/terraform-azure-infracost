@@ -1,6 +1,6 @@
 # Terraform Azure Example
 
-This repository contains Terraform configurations that provision an Azure resource group, networking (VNet, subnet, NSG), and a Windows virtual machine with optional public IP and data disk. It includes GitHub Actions workflows for validation, deployment, and manual destroy, using GitHub Actions secrets-driven tfvars.
+This repository contains Terraform configurations that provision an Azure resource group, networking (VNet, subnet, NSG), and a Windows virtual machine with an optional public IP. It includes GitHub Actions workflows for validation, deployment, and manual destroy, using GitHub Actions secrets-driven tfvars.
 
 <a href="https://www.buymeacoffee.com/techielass"> <img align="left" src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" height="50" width="210" alt="techielass" /></a></p>
 

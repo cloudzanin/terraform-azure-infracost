@@ -69,9 +69,9 @@ variable "admin_username" {
 }
 
 variable "os_disk_size_gb" {
-  description = "Size of the OS disk in GB"
+  description = "Size of the OS disk in GB. Windows Server images used here require at least 127 GB."
   type        = number
-  default     = 30
+  default     = 127
 }
 
 variable "enable_accelerated_networking" {
