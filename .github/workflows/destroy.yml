@@ -13,6 +13,7 @@ jobs:
     if: ${{ github.event.inputs.confirm == 'YES' }}
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: read
 
     steps:
@@ -27,14 +28,16 @@ jobs:
     - name: Azure Login
       uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURECREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Write terraform.tfvars.json from secrets
       shell: bash
       run: |
         cat > terraform.tfvars.json <<'EOF'
         {
-          "azure_subscription_id": "${{ fromJSON(secrets.AZURECREDENTIALS).subscriptionId }}"
+          "azure_subscription_id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
         }
         EOF
 
